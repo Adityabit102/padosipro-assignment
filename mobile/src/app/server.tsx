@@ -31,15 +31,13 @@ export default function ServerScreen() {
     if (!validate()) return;
     setTesting(true);
     setResult(null);
-    const previous = getApiUrl();
     try {
-      await setApiUrl(url);
-      await api.health();
+      // Only Save changes the stored address; testing leaves it alone.
+      await api.health(normalizeUrl(url));
       setResult({ ok: true, message: 'Connected. The server is reachable.' });
     } catch (err) {
       setResult({ ok: false, message: errorMessage(err) });
     } finally {
-      await setApiUrl(previous === DEFAULT_API_URL ? null : previous);
       setTesting(false);
     }
   };

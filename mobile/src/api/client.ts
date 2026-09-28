@@ -42,7 +42,8 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
 
 type Method = 'GET' | 'POST' | 'PUT';
 
-export async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
+/** `baseUrl` overrides the saved server address for this one call (used to test a new address). */
+export async function request<T>(method: Method, path: string, body?: unknown, baseUrl = getApiUrl()): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const headers: Record<string, string> = { Accept: 'application/json' };
@@ -51,7 +52,7 @@ export async function request<T>(method: Method, path: string, body?: unknown): 
 
   let res: Response;
   try {
-    res = await fetch(`${getApiUrl()}${path}`, {
+    res = await fetch(`${baseUrl}${path}`, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),

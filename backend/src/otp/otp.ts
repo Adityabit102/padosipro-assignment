@@ -66,8 +66,9 @@ export type OtpCheckResult =
  * The checks run in a deliberate order: a used or locked code is rejected before
  * expiry, and expiry before comparing the code. An attacker therefore learns nothing
  * about the code once it can no longer be used.
- * A wrong guess returns the attempts left *after* counting this one; the caller must
- * persist that increment.
+ * `record.attempts` is the number of wrong guesses before this one. A wrong guess
+ * returns the attempts left *after* counting it; the caller persists the count
+ * (auth.service reserves it atomically before calling this).
  */
 export function checkOtp(
   record: OtpRecord | null,

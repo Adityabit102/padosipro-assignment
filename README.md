@@ -34,9 +34,9 @@ docker compose up --build
 
 When `http://localhost:4000/health` shows `{"status":"ok"}`, it's ready. The OTP emails appear in **Mailpit at http://localhost:8025**.
 
-**2. Install the app.** Download `PadosiPro-v1.0.0.apk` from this repository's **Releases** page, then either:
+**2. Install the app.** Download `PadosiPro-v1.0.1.apk` from this repository's **Releases** page, then either:
 
-- **Android emulator:** drag the APK onto the emulator window, or run `adb install PadosiPro-v1.0.0.apk`. No setup is needed; the emulator reaches your computer at `10.0.2.2:4000`.
+- **Android emulator:** drag the APK onto the emulator window, or run `adb install PadosiPro-v1.0.1.apk`. No setup is needed; the emulator reaches your computer at `10.0.2.2:4000`.
 - **Android phone on the same Wi-Fi:** install the APK. On the Log in screen, tap **Server · Change** at the bottom and enter `http://<your computer's Wi-Fi IP>:4000`. Get the IP with `ipconfig getifaddr en0` on macOS or `ipconfig` on Windows. Tap **Test connection**, then **Save**. If the app can't reach the server, it tells you so and links straight to this setting.
 
 To build the app yourself instead, see [section 3](#3-run-the-mobile-app) (Expo Go) or [section 5](#5-build-the-apk).
@@ -106,7 +106,7 @@ To run the API outside Docker (`npm run dev`), copy [`backend/.env.example`](bac
 | `SMTP_HOST` / `SMTP_PORT` | `localhost` / `1025` | Mail server (Mailpit) |
 | `SMTP_USER` / `SMTP_PASS` / `SMTP_SECURE` | empty / empty / `false` | For a real SMTP provider |
 | `MAIL_FROM` | `PadosiPro <no-reply@padosipro.local>` | Sender address |
-| `AUTH_RATE_LIMIT_PER_15_MIN` | `50` | Requests per IP to `/auth/*` |
+| `AUTH_RATE_LIMIT_PER_15_MIN` | `50` (`300` in Docker Compose) | Requests per IP to `/auth/*`. Compose raises it because all emulator traffic comes from one IP. |
 | `PORT` / `LOG_LEVEL` | `4000` / `info` | |
 
 The config is validated at startup. A missing or weak secret stops the server with a clear message.
@@ -163,7 +163,7 @@ Please use test data only (e.g. `@example.com` addresses).
 cd backend
 npm install
 docker compose up -d db              # the integration tests use a separate padosipro_test database, created automatically
-npm test                             # 68 tests: unit + integration
+npm test                             # 70 tests: unit + integration
 npm run test:unit                    # 50 pure unit tests, no database needed
 npm run typecheck && npm run lint
 ```
@@ -175,7 +175,7 @@ What's covered, with the risky logic first:
   - unverified users get 403 plus a fresh code, and no token
   - a wrong password gets the same response as an unknown email
   - case-insensitive email
-  - 5-attempt lockout then recovery; expiry; an old code is invalidated by a resend
+  - 5-attempt lockout then recovery, including 20 parallel guesses (only 5 are ever compared); expiry; an old code is invalidated by a resend
   - cooldown; no account enumeration on resend
   - SMTP failure handling
   - profile validation, then catalogue, search, task replace and unknown task ids

@@ -16,5 +16,5 @@ export const api = {
   saveMyTasks: (taskIds: string[]) =>
     request<{ categories: Category[] }>('PUT', '/me/tasks', { taskIds }).then((r) => r.categories),
 
-  health: () => request<{ status: string }>('GET', '/health'),
+  health: (baseUrl?: string) => request<{ status: string }>('GET', '/health', undefined, baseUrl),
 };

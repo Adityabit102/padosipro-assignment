@@ -28,7 +28,7 @@ Every error has the same shape, so the app can branch on `code` and show `messag
 | `OTP_INVALID` | 400 | Wrong code; `details: { attemptsLeft }` |
 | `OTP_LOCKED` | 429 | 5 wrong codes; a new code is required |
 | `OTP_EXPIRED` | 400 | Code older than 10 minutes |
-| `OTP_NOT_FOUND` | 400 | No usable code (already used, or never sent) |
+| `OTP_NOT_FOUND` | 400 | No usable code (already used, never sent, or unknown email) |
 | `RESEND_TOO_SOON` | 429 | Resend within 30 s; `details: { retryAfterSec }` |
 | `EMAIL_DELIVERY_FAILED` | 502 | SMTP failed; safe to resend immediately |
 | `UNAUTHORIZED` | 401 | Missing, invalid or expired token |

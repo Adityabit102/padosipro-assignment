@@ -48,6 +48,8 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       MAIL_FROM: PadosiPro <no-reply@padosipro.local>
+      # Generous for local review: all emulator traffic arrives from one IP. The API default is 50.
+      AUTH_RATE_LIMIT_PER_15_MIN: ${AUTH_RATE_LIMIT_PER_15_MIN:-300}
       LOG_LEVEL: info
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]

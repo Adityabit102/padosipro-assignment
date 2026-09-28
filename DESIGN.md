@@ -4,7 +4,7 @@
 
 ```
  React Native app (Expo Router)                 Node API (Express 5)                    Postgres 16
- ┌───────────────────────────┐   HTTPS/JSON    ┌──────────────────────────────┐  Prisma ┌──────────────┐
+ ┌───────────────────────────┐   HTTP/JSON     ┌──────────────────────────────┐  Prisma ┌──────────────┐
  │ screens  login/register/  │ ──────────────▶ │ routes  → zod parse → service │ ──────▶ │ User         │
  │ verify/profile/tasks/home │  Bearer JWT     │ auth · account · task         │         │ EmailOtp (1) │
  │ AuthProvider (SecureStore)│ ◀────────────── │ otp/otp.ts  (pure rules)      │         │ Profile  (1) │
@@ -25,8 +25,8 @@
 |---|---|
 | Passwords | argon2id (OWASP default parameters). Login always runs one hash verify, even for unknown emails, so timing doesn't reveal accounts. |
 | OTP storage | `HMAC-SHA256(OTP_SECRET, userId:code)`. The plain code exists only in the email. A leaked table can't be brute-forced (10⁶ codes) without the server secret. |
-| OTP rules | CSPRNG 6 digits · 10 min · 5 wrong guesses lock the code (the 5th wrong guess locks it immediately) · single use, enforced atomically (`UPDATE … WHERE consumedAt IS NULL`) · 30 s resend cooldown · a new code replaces the old one and resets attempts. Checks run in a fixed order: used → locked → expired → compare. |
-| Enumeration | Wrong password and unknown email give an identical 401. Resend answers the same for unknown emails. Register does reveal a taken *verified* email (409), a deliberate UX trade-off. |
+| OTP rules | CSPRNG 6 digits · 10 min · 5 wrong guesses lock the code (the 5th wrong guess locks it immediately) · each guess is counted atomically *before* the compare (`UPDATE … SET attempts = attempts + 1 WHERE attempts < 5`), so parallel requests can't get more than 5 guesses in · single use, enforced atomically (`UPDATE … WHERE consumedAt IS NULL`) · 30 s resend cooldown · a new code replaces the old one and resets attempts. Checks run in a fixed order: used → locked → expired → compare. |
+| Enumeration | Wrong password and unknown email give an identical 401. Resend answers the same for unknown emails, and verify answers an unknown email like a sign-up with no usable code. Register does reveal a taken *verified* email (409), a deliberate UX trade-off. |
 | Abuse | Per-IP rate limit on `/auth/*`, a 10 kB body cap, helmet headers. Secrets are validated at boot, and logs redact auth headers and passwords. |
 
 ## Trade-offs
@@ -36,7 +36,6 @@
 - **Re-registering an unverified email replaces its password.** This rescues users who abandoned sign-up, and is safe because the account stays unusable until someone proves they own the inbox.
 - **Search runs on the client** over the 30-task catalogue, so it's instant and works offline. `GET /tasks?q=` also exists for when the catalogue grows.
 - **Flat catalogue (category → task)** with stable slug ids, a simplified version of the site's category → subcategory → task tree. Seeding is idempotent and runs on every start.
-- **Known race:** concurrent *wrong* guesses at the same instant could each be evaluated before the counter increments. This is bounded by the rate limit. Reserving an attempt atomically before comparing would close it.
 
 ## What I left out
 
@@ -45,6 +44,6 @@ Password reset · changing email · editing the profile after onboarding · phon
 ## Next, with another week
 
 1. **Tests on the app side:** React Native Testing Library for the verify and tasks screens, plus one Maestro end-to-end flow run in CI.
-2. **Auth hardening:** short-lived access token + rotating refresh token, an atomic attempt reservation for OTP, rate limiting per email as well as per IP.
+2. **Auth hardening:** short-lived access token + rotating refresh token, rate limiting per email as well as per IP.
 3. **Product:** forgot password (reusing the OTP module), profile editing, the site's subcategories, and the requests flow that follows task selection.
-4. **Ops:** GitHub Actions (lint, typecheck, tests, EAS build), a staging deploy (Fly/Render + managed Postgres), structured log shipping, Sentry in the app.
+4. **Ops:** an EAS build step in the existing CI, a staging deploy (Fly/Render + managed Postgres), structured log shipping, Sentry in the app.

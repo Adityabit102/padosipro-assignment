@@ -111,6 +111,38 @@ describe('POST /auth/verify-email', () => {
       .expect(200);
   });
 
+  it('never compares more than 5 guesses, even when they arrive at the same time', async () => {
+    const email = newEmail();
+    await request(ctx.app).post('/auth/register').send({ email, password: PASSWORD }).expect(201);
+    const code = ctx.mailer.lastCodeFor(email);
+    const guesses = Array.from({ length: 20 }, (_, i) => String(i).padStart(6, '0')).filter((g) => g !== code);
+
+    const responses = await Promise.all(
+      guesses.map((guess) => request(ctx.app).post('/auth/verify-email').send({ email, code: guess })),
+    );
+    const codes = responses.map((r) => r.body.error.code);
+    // Parallel guesses can see each other's counts, so fewer than 4 may report OTP_INVALID,
+    // but never more: every other guess is refused as locked.
+    expect(codes.filter((c) => c === 'OTP_INVALID').length).toBeLessThanOrEqual(4);
+    expect(codes.every((c) => c === 'OTP_INVALID' || c === 'OTP_LOCKED')).toBe(true);
+
+    // Only 5 guesses were ever let through to the comparison.
+    const otp = await ctx.prisma.emailOtp.findFirstOrThrow({ where: { user: { email } } });
+    expect(otp.attempts).toBe(5);
+    await request(ctx.app).post('/auth/verify-email').send({ email, code }).expect(429);
+  });
+
+  it('answers an unknown email like a pending sign-up without a usable code', async () => {
+    const res = await request(ctx.app)
+      .post('/auth/verify-email')
+      .send({ email: 'nobody@example.com', code: '123456' })
+      .expect(400);
+    expect(res.body.error).toMatchObject({
+      code: 'OTP_NOT_FOUND',
+      message: 'This code is no longer valid. Please request a new code.',
+    });
+  });
+
   it('rejects a code after 10 minutes', async () => {
     const email = newEmail();
     await request(ctx.app).post('/auth/register').send({ email, password: PASSWORD }).expect(201);

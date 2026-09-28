@@ -91,21 +91,35 @@ export function createAuthService(deps: AuthDeps) {
 
   async function verifyEmail(email: string, code: string): Promise<{ email: string }> {
     const user = await prisma.user.findUnique({ where: { email }, include: { otp: true } });
-    if (!user) {
-      throw new AppError(400, 'OTP_NOT_FOUND', 'No verification is pending for this email. Please sign up first.');
-    }
+    // An unknown email gets the same answer as a pending sign-up with no usable code.
+    if (!user) throw otpError({ ok: false, reason: 'NOT_FOUND', attemptsLeft: 0, countAttempt: false });
     if (user.emailVerifiedAt) {
       throw new AppError(409, 'EMAIL_ALREADY_VERIFIED', 'Your email is already verified. Please log in.');
     }
 
-    const result = checkOtp(user.otp, hashOtpCode(code, user.id, config.OTP_SECRET), now(), policy);
+    const candidateHash = hashOtpCode(code, user.id, config.OTP_SECRET);
+    const at = now();
 
-    if (!result.ok) {
-      if (result.countAttempt) {
-        await prisma.emailOtp.update({ where: { userId: user.id }, data: { attempts: { increment: 1 } } });
-      }
-      throw otpError(result);
+    // Count this guess before comparing. The conditional UPDATE is atomic, so parallel
+    // requests can't get more than maxAttempts comparisons against one code.
+    const reserved = await prisma.emailOtp.updateMany({
+      where: { userId: user.id, consumedAt: null, attempts: { lt: policy.maxAttempts }, expiresAt: { gt: at } },
+      data: { attempts: { increment: 1 } },
+    });
+    const otp = reserved.count === 1 ? await prisma.emailOtp.findUnique({ where: { userId: user.id } }) : null;
+
+    if (!otp) {
+      // No guess was reserved: the code is missing, used, locked or expired. The record read
+      // above says which; if it still looked usable, parallel guesses used up its attempts.
+      const stale = checkOtp(user.otp, candidateHash, at, policy);
+      throw otpError(
+        stale.ok || stale.countAttempt ? { ok: false, reason: 'LOCKED', attemptsLeft: 0, countAttempt: false } : stale,
+      );
     }
+
+    // `attempts` now includes this guess (and any parallel ones); the rules expect the count before it.
+    const result = checkOtp({ ...otp, attempts: otp.attempts - 1 }, candidateHash, at, policy);
+    if (!result.ok) throw otpError(result);
 
     const verifiedAt = now();
     await prisma.$transaction(async (tx) => {

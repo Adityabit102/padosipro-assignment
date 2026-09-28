@@ -11,6 +11,17 @@ The first journey of the PadosiPro customer app, built as a **native mobile app*
 | [`DESIGN.md`](DESIGN.md) | Architecture, trade-offs, what's left out, next steps |
 | [`backend/API.md`](backend/API.md) | Endpoint and error reference |
 
+<p>
+<img src="docs/screenshots/login.jpg" width="130" alt="Log in">
+<img src="docs/screenshots/verify-wrong-code.jpg" width="130" alt="Verify email, wrong code">
+<img src="docs/screenshots/profile.jpg" width="130" alt="First-login profile">
+<img src="docs/screenshots/tasks.jpg" width="130" alt="Task selection">
+<img src="docs/screenshots/confirm.jpg" width="130" alt="Confirm step">
+<img src="docs/screenshots/home.jpg" width="130" alt="Home">
+</p>
+
+*Screenshots from the release APK on an Android 15 emulator (Pixel 6), running against the Docker backend.*
+
 ---
 
 ## 1. Prerequisites
@@ -160,15 +171,20 @@ npx eas-cli@latest build -p android --profile preview
 
 The `preview` profile in `eas.json` produces an installable **`.apk`**. The first run offers to create the EAS project; answer yes. When it finishes, it prints a download link and a QR code.
 
-### Option B: local build (Android Studio + JDK 17)
+### Option B: local build (Android SDK + JDK 17 or 21)
+
+Android Studio installs everything you need. The command-line tools alone also work (`brew install --cask android-commandlinetools`, then accept the licences with `sdkmanager --licenses`). Gradle downloads the SDK platform, build tools and NDK it needs on the first build.
 
 ```bash
 cd mobile
+npm install
 export ANDROID_HOME=$HOME/Library/Android/sdk   # Windows: %LOCALAPPDATA%\Android\Sdk
+export JAVA_HOME=$(/usr/libexec/java_home -v 21) # macOS; any JDK 17 or 21
 EXPO_PUBLIC_API_URL=http://10.0.2.2:4000 npm run build:apk:local
 # = npx expo prebuild -p android --clean && cd android && ./gradlew assembleRelease
 ```
 
+The first build takes about 20 minutes (it compiles the native modules); later builds are much faster.
 The APK is written to `mobile/android/app/build/outputs/apk/release/app-release.apk`. It is signed with the debug keystore, which is fine for testing.
 Install it with `adb install -r mobile/android/app/build/outputs/apk/release/app-release.apk`.
 

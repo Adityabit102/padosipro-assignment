@@ -1,0 +1,86 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  /// Stored trimmed and lower-cased so lookups are case-insensitive.
+  email           String    @unique
+  /// argon2id hash. The plain password is never stored or logged.
+  passwordHash    String
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  otp     EmailOtp?
+  profile Profile?
+  tasks   UserTask[]
+}
+
+/// At most one live verification code per user: issuing a new code replaces the old one.
+model EmailOtp {
+  userId     String    @id
+  /// HMAC-SHA256 of the code. The code itself only ever exists in the email.
+  codeHash   String
+  expiresAt  DateTime
+  /// Wrong guesses against the current code.
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  /// Used for the resend cooldown.
+  sentAt     DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Profile {
+  userId       String   @id
+  name         String
+  /// E.164 format, always +91 followed by 10 digits.
+  mobile       String
+  address      String
+  businessName String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TaskCategory {
+  id        String @id
+  name      String @unique
+  /// Feather icon name used by the mobile app.
+  icon      String
+  sortOrder Int
+
+  tasks Task[]
+}
+
+model Task {
+  id          String @id
+  categoryId  String
+  name        String
+  description String
+  sortOrder   Int
+
+  category TaskCategory @relation(fields: [categoryId], references: [id])
+  users    UserTask[]
+
+  @@index([categoryId])
+}
+
+model UserTask {
+  userId    String
+  taskId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id])
+
+  @@id([userId, taskId])
+}

@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { AppError } from '../lib/errors';
+import { matchesSearch } from '../lib/search';
 
 export interface TaskDto {
   id: string;
@@ -30,23 +31,23 @@ function toCategories(
     }));
 }
 
-/** The full catalogue grouped by category, optionally filtered by a search term. */
+/**
+ * The full catalogue grouped by category, optionally filtered by a search term.
+ * The catalogue is small (tens of rows), so filtering happens in memory, which lets
+ * "wifi" match "Wi-Fi" (see lib/search.ts). Move this into SQL if the catalogue grows.
+ */
 export async function listCatalogue(prisma: PrismaClient, q?: string): Promise<CategoryDto[]> {
-  const term = q?.trim();
-  const where: Prisma.TaskWhereInput | undefined = term
-    ? {
-        OR: [
-          { name: { contains: term, mode: 'insensitive' } },
-          { description: { contains: term, mode: 'insensitive' } },
-          { category: { name: { contains: term, mode: 'insensitive' } } },
-        ],
-      }
-    : undefined;
   const rows = await prisma.taskCategory.findMany({
     orderBy: categoryOrder,
-    include: { tasks: { where, orderBy: taskOrder } },
+    include: { tasks: { orderBy: taskOrder } },
   });
-  return toCategories(rows);
+  const term = q?.trim() ?? '';
+  return toCategories(
+    rows.map((c) => ({
+      ...c,
+      tasks: c.tasks.filter((t) => matchesSearch(term, [t.name, t.description, c.name])),
+    })),
+  );
 }
 
 export async function getUserTasks(prisma: PrismaClient, userId: string): Promise<CategoryDto[]> {

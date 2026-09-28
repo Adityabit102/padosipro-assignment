@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loginSchema, otpCodeSchema, registerSchema } from '../../src/schemas/auth.schemas';
 import { normalizeIndianMobile, profileSchema } from '../../src/schemas/profile.schemas';
 import { saveTasksSchema } from '../../src/schemas/task.schemas';
+import { matchesSearch } from '../../src/lib/search';
 
 describe('normalizeIndianMobile', () => {
   it.each([
@@ -88,5 +89,19 @@ describe('saveTasksSchema', () => {
   it('deduplicates ids and requires at least one', () => {
     expect(saveTasksSchema.parse({ taskIds: ['a', 'b', 'a'] }).taskIds).toEqual(['a', 'b']);
     expect(saveTasksSchema.safeParse({ taskIds: [] }).success).toBe(false);
+  });
+});
+
+describe('matchesSearch', () => {
+  const fields = ['Wi-Fi & internet setup', 'Connections installed and routers set up.', 'Tech'];
+
+  it('ignores case, spaces and punctuation', () => {
+    for (const q of ['wifi', 'WI-FI', 'wi fi', 'Internet', 'tech', '  wifi  ']) expect(matchesSearch(q, fields)).toBe(true);
+  });
+
+  it('matches everything for an empty query and nothing for unrelated words', () => {
+    expect(matchesSearch('', fields)).toBe(true);
+    expect(matchesSearch('plumbing', fields)).toBe(false);
+    expect(matchesSearch('---', fields)).toBe(false);
   });
 });

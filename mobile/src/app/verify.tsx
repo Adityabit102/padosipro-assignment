@@ -2,12 +2,14 @@ import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError, errorMessage } from '@/api/client';
+import { isLocalServer } from '@/api/config';
 import { api } from '@/api/endpoints';
 import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { OtpInput, type OtpInputHandle } from '@/components/OtpInput';
 import { Screen } from '@/components/Screen';
+import { ServerErrorBanner } from '@/components/ServerErrorBanner';
 import { colors, fonts, space, type } from '@/theme/tokens';
 import { maskEmail } from '@/utils/validation';
 
@@ -53,6 +55,7 @@ export default function VerifyScreen() {
   // Expired or locked: the only way forward is a new code.
   const [needsNewCode, setNeedsNewCode] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [offline, setOffline] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendIn, restartCountdown] = useCountdown(Number(params.retryAfter ?? 30) || 0);
 
@@ -65,10 +68,15 @@ export default function VerifyScreen() {
     }
     setVerifying(true);
     setNotice(null);
+    setOffline(false);
     try {
       await api.verifyEmail(email, value);
       goToLogin(email);
     } catch (err) {
+      if (err instanceof ApiError && err.isNetwork) {
+        setOffline(true);
+        return;
+      }
       setCodeError(true);
       if (!(err instanceof ApiError)) {
         setNotice({ tone: 'error', message: errorMessage(err) });
@@ -100,6 +108,7 @@ export default function VerifyScreen() {
   const resend = async () => {
     if (resending || resendIn > 0) return;
     setResending(true);
+    setOffline(false);
     try {
       const res = await api.resendOtp(email);
       restartCountdown(res.retryAfterSec);
@@ -109,6 +118,10 @@ export default function VerifyScreen() {
       setNotice({ tone: 'success', message: `We sent a new code to ${maskEmail(email)}.` });
       otpRef.current?.focus();
     } catch (err) {
+      if (err instanceof ApiError && err.isNetwork) {
+        setOffline(true);
+        return;
+      }
       if (err instanceof ApiError && err.code === 'RESEND_TOO_SOON') {
         restartCountdown(Number(err.details.retryAfterSec ?? 30));
       }
@@ -141,6 +154,7 @@ export default function VerifyScreen() {
         subtitle={`We sent a verification code to ${maskEmail(email)}. It expires in 10 minutes.`}
       />
 
+      {offline ? <ServerErrorBanner onDismiss={() => setOffline(false)} /> : null}
       {notice ? <Banner tone={notice.tone} message={notice.message} /> : null}
 
       <OtpInput
@@ -167,10 +181,16 @@ export default function VerifyScreen() {
           </Pressable>
         )}
       </View>
-      <Text style={styles.tip}>
-        Check your spam or promotions folder too.
-        {__DEV__ ? ' Running the local backend? The email is in Mailpit at localhost:8025.' : ''}
-      </Text>
+      {isLocalServer() ? (
+        <View style={styles.mailpit}>
+          <Text style={styles.mailpitTitle}>Testing with the local backend?</Text>
+          <Text style={type.small}>
+            The email is in Mailpit. Open http://localhost:8025 on the computer running the backend.
+          </Text>
+        </View>
+      ) : (
+        <Text style={styles.tip}>Check your spam or promotions folder too.</Text>
+      )}
     </Screen>
   );
 }
@@ -180,4 +200,11 @@ const styles = StyleSheet.create({
   countdown: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textMutedDeep, fontVariant: ['tabular-nums'] },
   link: { fontFamily: fonts.semibold, fontSize: 13, color: colors.primary },
   tip: { ...type.small, marginTop: space.sm },
+  mailpit: {
+    marginTop: space.md,
+    padding: space.md,
+    borderRadius: 12,
+    backgroundColor: colors.tealMuted,
+  },
+  mailpitTitle: { fontFamily: fonts.semibold, fontSize: 13, color: colors.primaryDeep, marginBottom: 2 },
 });

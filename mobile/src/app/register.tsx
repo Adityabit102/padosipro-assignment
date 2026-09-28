@@ -1,11 +1,13 @@
-import { Link, router } from 'expo-router';
+import { Link, router, useIsFocused } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type TextInput } from 'react-native';
 import { ApiError, errorMessage } from '@/api/client';
+import { getApiUrl } from '@/api/config';
 import { api } from '@/api/endpoints';
 import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
+import { ServerErrorBanner } from '@/components/ServerErrorBanner';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { colors, fonts, space, type } from '@/theme/tokens';
@@ -20,6 +22,8 @@ export default function RegisterScreen() {
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
   const [serverErrors, setServerErrors] = useState<Partial<Record<Field, string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [unreachableUrl, setUnreachableUrl] = useState<string | null>(null);
+  useIsFocused(); // re-render when coming back from the Server screen
   const [submitting, setSubmitting] = useState(false);
 
   const clientErrors: Record<Field, string | null> = {
@@ -39,6 +43,7 @@ export default function RegisterScreen() {
   const submit = async () => {
     setTouched({ email: true, password: true, confirm: true });
     setFormError(null);
+    setUnreachableUrl(null);
     if (clientErrors.email || clientErrors.password || clientErrors.confirm || submitting) return;
 
     setSubmitting(true);
@@ -49,6 +54,8 @@ export default function RegisterScreen() {
       if (err instanceof ApiError && (err.code === 'VALIDATION_ERROR' || err.code === 'EMAIL_TAKEN')) {
         setServerErrors(err.fields);
         if (!Object.keys(err.fields).length) setFormError(err.message);
+      } else if (err instanceof ApiError && err.isNetwork) {
+        setUnreachableUrl(getApiUrl());
       } else {
         setFormError(errorMessage(err));
       }
@@ -77,6 +84,7 @@ export default function RegisterScreen() {
         title="Create your account"
         subtitle="Tell us what your household needs. Your Lifestyle Manager takes it from there."
       />
+      {unreachableUrl === getApiUrl() ? <ServerErrorBanner onDismiss={() => setUnreachableUrl(null)} /> : null}
       {formError ? <Banner tone="error" message={formError} /> : null}
 
       <TextField

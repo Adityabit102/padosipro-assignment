@@ -23,16 +23,10 @@ import { Header } from '@/components/Header';
 import { EmptyView, ErrorView, LoadingView } from '@/components/StateViews';
 import { TaskRow } from '@/components/TaskRow';
 import { colors, fonts, radius, space, type } from '@/theme/tokens';
+import { matchesSearch } from '@/utils/search';
 
 type Section = { category: Category; data: Task[] };
 
-function matches(task: Task, category: Category, q: string) {
-  return (
-    task.name.toLowerCase().includes(q) ||
-    task.description.toLowerCase().includes(q) ||
-    category.name.toLowerCase().includes(q)
-  );
-}
 
 export default function TasksScreen() {
   const { account, setAccount } = useAuth();
@@ -67,9 +61,11 @@ export default function TasksScreen() {
   );
 
   const sections = useMemo<Section[]>(() => {
-    const q = query.trim().toLowerCase();
     return (catalogue.data ?? [])
-      .map((category) => ({ category, data: q ? category.tasks.filter((t) => matches(t, category, q)) : category.tasks }))
+      .map((category) => ({
+        category,
+        data: category.tasks.filter((t) => matchesSearch(query, [t.name, t.description, category.name])),
+      }))
       .filter((s) => s.data.length > 0);
   }, [catalogue.data, query]);
 

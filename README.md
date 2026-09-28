@@ -24,6 +24,39 @@ The first journey of the PadosiPro customer app, built as a **native mobile app*
 
 ---
 
+## Reviewer quick start (about 5 minutes)
+
+**1. Start the backend** (needs Docker Desktop):
+
+```bash
+docker compose up --build
+```
+
+When `http://localhost:4000/health` shows `{"status":"ok"}`, it's ready. The OTP emails appear in **Mailpit at http://localhost:8025**.
+
+**2. Install the app.** Download `PadosiPro-v1.0.0.apk` from this repository's **Releases** page, then either:
+
+- **Android emulator:** drag the APK onto the emulator window, or run `adb install PadosiPro-v1.0.0.apk`. No setup is needed; the emulator reaches your computer at `10.0.2.2:4000`.
+- **Android phone on the same Wi-Fi:** install the APK. On the Log in screen, tap **Server · Change** at the bottom and enter `http://<your computer's Wi-Fi IP>:4000`. Get the IP with `ipconfig getifaddr en0` on macOS or `ipconfig` on Windows. Tap **Test connection**, then **Save**. If the app can't reach the server, it tells you so and links straight to this setting.
+
+To build the app yourself instead, see [section 3](#3-run-the-mobile-app) (Expo Go) or [section 5](#5-build-the-apk).
+
+**3. Walk through the journey:**
+
+| # | Do this | What to check |
+|---|---|---|
+| 1 | **Create an account**, e.g. `test.user@example.com` / `secret123` | Inline errors for a bad email, a short password, or passwords that don't match |
+| 2 | Enter the 6-digit code from **Mailpit** | A wrong code shows the attempts left, and the 5th wrong code locks it. *Resend code* unlocks after a 30 s countdown. Codes expire after 10 minutes. |
+| 3 | **Log in** with the same details | Logging in before verifying sends you back to the code screen with a fresh code |
+| 4 | Fill in the **profile** (Business name is optional) | Mobile must be a valid Indian number (`98765 43210`). This screen appears only once. |
+| 5 | **Pick tasks**: search, tick several, *Continue*, then *Confirm and save* | Tasks are grouped by category; there's an empty state for a search with no results, and a confirm sheet |
+| 6 | **Home** lists your tasks | Close and reopen the app: you're still logged in. *Edit tasks* changes them. |
+| 7 | **Log out** | You're back on Log in. Logging in again goes straight to Home, not the profile. |
+
+Please use test data only (`@example.com` addresses).
+
+---
+
 ## 1. Prerequisites
 
 | Tool | Version | Needed for |
@@ -130,8 +163,8 @@ Please use test data only (e.g. `@example.com` addresses).
 cd backend
 npm install
 docker compose up -d db              # the integration tests use a separate padosipro_test database, created automatically
-npm test                             # 66 tests: unit + integration
-npm run test:unit                    # 48 pure unit tests, no database needed
+npm test                             # 68 tests: unit + integration
+npm run test:unit                    # 50 pure unit tests, no database needed
 npm run typecheck && npm run lint
 ```
 

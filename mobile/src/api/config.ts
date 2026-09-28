@@ -36,6 +36,12 @@ export function normalizeUrl(input: string): string {
   return url;
 }
 
+/** True for localhost, the emulator alias and private LAN addresses, i.e. a local test backend. */
+export function isLocalServer(url: string = current): boolean {
+  const host = url.replace(/^https?:\/\//i, '').split(/[:/]/)[0] ?? '';
+  return /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)|\.local$/.test(host);
+}
+
 export function isValidServerUrl(input: string): boolean {
   return /^https?:\/\/[^\s/:]+(:\d{1,5})?(\/.*)?$/i.test(normalizeUrl(input));
 }

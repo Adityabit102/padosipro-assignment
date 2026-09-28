@@ -238,6 +238,11 @@ describe('authenticated routes', () => {
       expect.objectContaining({ id: 'home', tasks: [expect.objectContaining({ id: 'plumbing-repairs' })] }),
     ]);
 
+    const wifi = await request(ctx.app).get('/tasks').query({ q: 'wifi' }).set(auth).expect(200);
+    expect(wifi.body.categories).toEqual([
+      expect.objectContaining({ id: 'tech', tasks: [expect.objectContaining({ id: 'wifi-setup' })] }),
+    ]);
+
     const unknown = await request(ctx.app).put('/me/tasks').set(auth).send({ taskIds: ['deep-cleaning', 'nope'] }).expect(400);
     expect(unknown.body.error).toMatchObject({ code: 'UNKNOWN_TASKS', details: { unknownIds: ['nope'] } });
 

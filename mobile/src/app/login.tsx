@@ -1,4 +1,4 @@
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { Link, router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type TextInput } from 'react-native';
 import { ApiError, errorMessage } from '@/api/client';
@@ -8,6 +8,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
+import { ServerErrorBanner } from '@/components/ServerErrorBanner';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { colors, fonts, space, type } from '@/theme/tokens';
@@ -22,12 +23,17 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string | null; password?: string | null }>({});
   const [formError, setFormError] = useState<string | null>(null);
+  // The server address that last failed; the banner hides once the address is changed.
+  const [unreachableUrl, setUnreachableUrl] = useState<string | null>(null);
+  useIsFocused(); // re-render when coming back from the Server screen
+  const apiUrl = getApiUrl();
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
     const next = { email: validateEmail(email), password: password ? null : 'Password is required' };
     setErrors(next);
     setFormError(null);
+    setUnreachableUrl(null);
     if (next.email || next.password || submitting) return;
 
     setSubmitting(true);
@@ -46,6 +52,8 @@ export default function LoginScreen() {
         });
       } else if (err instanceof ApiError && err.code === 'VALIDATION_ERROR') {
         setErrors(err.fields);
+      } else if (err instanceof ApiError && err.isNetwork) {
+        setUnreachableUrl(getApiUrl());
       } else {
         setFormError(errorMessage(err));
       }
@@ -72,7 +80,8 @@ export default function LoginScreen() {
     >
       <Header title="Welcome back" subtitle="You don't manage tasks — we do. Log in to continue." />
 
-      {params.verified === '1' && !formError ? (
+      {unreachableUrl === apiUrl ? <ServerErrorBanner onDismiss={() => setUnreachableUrl(null)} /> : null}
+      {params.verified === '1' && !formError && unreachableUrl !== apiUrl ? (
         <Banner tone="success" message="Email verified. Log in to continue." />
       ) : null}
       {formError ? <Banner tone="error" message={formError} /> : null}
@@ -120,7 +129,7 @@ export default function LoginScreen() {
       <Link href="/server" asChild>
         <Pressable style={styles.server} accessibilityRole="button" accessibilityLabel="Change server address">
           <Text style={styles.serverText} numberOfLines={1}>
-            Server: {getApiUrl().replace(/^https?:\/\//, '')} · <Text style={styles.link}>Change</Text>
+            Server: {apiUrl.replace(/^https?:\/\//, '')} · <Text style={styles.link}>Change</Text>
           </Text>
         </Pressable>
       </Link>

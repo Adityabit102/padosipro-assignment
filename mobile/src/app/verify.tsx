@@ -59,6 +59,9 @@ export default function VerifyScreen() {
   const [resending, setResending] = useState(false);
   const [resendIn, restartCountdown] = useCountdown(Number(params.retryAfter ?? 30) || 0);
 
+  // The code field is disabled until the new code's state has rendered, so focus it just after.
+  const focusSoon = () => setTimeout(() => otpRef.current?.focus(), 50);
+
   const verify = async (value = code) => {
     if (verifying) return;
     if (value.length !== 6) {
@@ -86,7 +89,7 @@ export default function VerifyScreen() {
         case 'OTP_INVALID':
           setCode('');
           setNotice({ tone: 'error', message: err.message });
-          otpRef.current?.focus();
+          focusSoon();
           break;
         case 'OTP_EXPIRED':
         case 'OTP_LOCKED':
@@ -116,7 +119,7 @@ export default function VerifyScreen() {
       setCodeError(false);
       setNeedsNewCode(false);
       setNotice({ tone: 'success', message: `We sent a new code to ${maskEmail(email)}.` });
-      otpRef.current?.focus();
+      focusSoon();
     } catch (err) {
       if (err instanceof ApiError && err.isNetwork) {
         setOffline(true);
@@ -185,7 +188,8 @@ export default function VerifyScreen() {
         <View style={styles.mailpit}>
           <Text style={styles.mailpitTitle}>Testing with the local backend?</Text>
           <Text style={type.small}>
-            The email is in Mailpit. Open http://localhost:8025 on the computer running the backend.
+            The email is in Mailpit. Open http://localhost:8025 on the computer running the backend, or port 8025
+            of the same address from this phone’s browser.
           </Text>
         </View>
       ) : (

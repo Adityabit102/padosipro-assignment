@@ -69,7 +69,7 @@ export default function LoginScreen() {
           <Button title="Log in" onPress={submit} loading={submitting} />
           <View style={styles.switchRow}>
             <Text style={type.small}>New to PadosiPro? </Text>
-            <Link href="/register" replace asChild>
+            <Link href="/register" asChild>
               <Pressable hitSlop={10} accessibilityRole="link">
                 <Text style={styles.link}>Create an account</Text>
               </Pressable>

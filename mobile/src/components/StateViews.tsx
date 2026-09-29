@@ -17,10 +17,10 @@ interface ErrorProps {
   message: string;
   onRetry?: () => void;
   retrying?: boolean;
-  secondaryAction?: { title: string; onPress: () => void };
+  secondaryActions?: { title: string; onPress: () => void }[];
 }
 
-export function ErrorView({ title = 'Something went wrong', message, onRetry, retrying, secondaryAction }: ErrorProps) {
+export function ErrorView({ title = 'Something went wrong', message, onRetry, retrying, secondaryActions = [] }: ErrorProps) {
   return (
     <View style={styles.center} accessibilityRole="alert">
       <View style={[styles.iconCircle, { backgroundColor: colors.errorBg }]}>
@@ -29,9 +29,9 @@ export function ErrorView({ title = 'Something went wrong', message, onRetry, re
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.body}>{message}</Text>
       {onRetry ? <Button title="Try again" icon="refresh-cw" onPress={onRetry} loading={retrying} style={styles.action} /> : null}
-      {secondaryAction ? (
-        <Button title={secondaryAction.title} variant="ghost" onPress={secondaryAction.onPress} style={styles.secondary} />
-      ) : null}
+      {secondaryActions.map((a) => (
+        <Button key={a.title} title={a.title} variant="ghost" onPress={a.onPress} style={styles.secondary} />
+      ))}
     </View>
   );
 }

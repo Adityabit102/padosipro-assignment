@@ -109,7 +109,7 @@ export default function TasksScreen() {
             void catalogue.refetch();
             if (isEditing) void mine.refetch();
           }}
-          secondaryAction={isEditing ? { title: 'Back to home', onPress: () => router.back() } : undefined}
+          secondaryActions={isEditing ? [{ title: 'Back to home', onPress: () => router.back() }] : []}
         />
       </SafeAreaView>
     );
@@ -119,39 +119,53 @@ export default function TasksScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View style={styles.top}>
-        <Header
-          back={isEditing}
-          brand={false}
-          eyebrow={isEditing ? 'Edit tasks' : 'Step 2 of 2 · Tasks'}
-          title="What would you like handled?"
-          subtitle="Pick everything you’d like your Lifestyle Manager to take care of."
-        />
-        <View style={styles.search}>
-          <Feather name="search" size={18} color={colors.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search tasks"
-            placeholderTextColor={colors.textMuted}
-            value={query}
-            onChangeText={setQuery}
-            autoCorrect={false}
-            returnKeyType="search"
-            accessibilityLabel="Search tasks"
-          />
-          {query ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={12} accessibilityRole="button" accessibilityLabel="Clear search">
-              <Feather name="x-circle" size={18} color={colors.textMuted} />
-            </Pressable>
-          ) : null}
+      {isEditing ? (
+        // Pinned, so the way back stays visible after the header scrolls away.
+        <View style={styles.topBar}>
+          <Pressable
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            style={styles.backButton}
+          >
+            <Feather name="arrow-left" size={22} color={colors.text} />
+          </Pressable>
         </View>
-      </View>
-
+      ) : null}
       <SectionList
         sections={sections}
         keyExtractor={(t) => t.id}
         renderItem={({ item }) => <TaskRow task={item} selected={selected.has(item.id)} onToggle={toggle} />}
         renderSectionHeader={({ section }) => <SectionHeader section={section} selected={selected} />}
+        ListHeaderComponent={
+          <View style={styles.top}>
+            <Header
+              brand={false}
+              eyebrow={isEditing ? 'Edit tasks' : 'Step 2 of 2 · Tasks'}
+              title="What would you like handled?"
+              subtitle="Pick everything you’d like your Lifestyle Manager to take care of."
+            />
+            <View style={styles.search}>
+              <Feather name="search" size={18} color={colors.textMuted} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search tasks"
+                placeholderTextColor={colors.textMuted}
+                value={query}
+                onChangeText={setQuery}
+                autoCorrect={false}
+                returnKeyType="search"
+                accessibilityLabel="Search tasks"
+              />
+              {query ? (
+                <Pressable onPress={() => setQuery('')} hitSlop={12} accessibilityRole="button" accessibilityLabel="Clear search">
+                  <Feather name="x-circle" size={18} color={colors.textMuted} />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        }
         stickySectionHeadersEnabled
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -171,19 +185,21 @@ export default function TasksScreen() {
       />
 
       <View style={styles.footer}>
-        {count > 0 ? (
-          <Pressable onPress={() => setPicked(new Set())} hitSlop={8} accessibilityRole="button" style={styles.clear}>
-            <Text style={styles.clearText}>Clear selection</Text>
-          </Pressable>
-        ) : null}
-        <Button
-          title={count === 0 ? 'Select at least one task' : `Continue · ${count} selected`}
-          onPress={() => {
-            save.reset();
-            setConfirming(true);
-          }}
-          disabled={count === 0}
-        />
+        <View style={styles.footerInner}>
+          {count > 0 ? (
+            <Pressable onPress={() => setPicked(new Set())} hitSlop={8} accessibilityRole="button" style={styles.clear}>
+              <Text style={styles.clearText}>Clear selection</Text>
+            </Pressable>
+          ) : null}
+          <Button
+            title={count === 0 ? 'Select at least one task' : `Continue · ${count} selected`}
+            onPress={() => {
+              save.reset();
+              setConfirming(true);
+            }}
+            disabled={count === 0}
+          />
+        </View>
       </View>
 
       <ConfirmSheet
@@ -261,7 +277,10 @@ function ConfirmSheet({ visible, categories, count, saving, error, onConfirm, on
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  top: { paddingHorizontal: space.lg, paddingTop: space.lg },
+  // The header scrolls with the list so small screens keep room for the tasks.
+  top: { paddingTop: space.lg },
+  topBar: { paddingHorizontal: space.lg, paddingTop: space.sm, width: '100%', maxWidth: 600, alignSelf: 'center' },
+  backButton: { width: 48, height: 48, justifyContent: 'center', marginLeft: -4 },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -275,7 +294,7 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   searchInput: { flex: 1, fontFamily: fonts.regular, fontSize: 16, color: colors.text, paddingVertical: 10 },
-  list: { paddingHorizontal: space.lg, paddingBottom: space.lg, flexGrow: 1 },
+  list: { paddingHorizontal: space.lg, paddingBottom: space.lg, flexGrow: 1, width: '100%', maxWidth: 600, alignSelf: 'center' },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -302,6 +321,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     backgroundColor: colors.background,
   },
+  footerInner: { width: '100%', maxWidth: 600, alignSelf: 'center' },
   clear: { alignSelf: 'center', paddingVertical: space.sm, marginBottom: space.xs },
   clearText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textMuted },
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(16,24,40,0.44)' },
@@ -312,6 +332,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingTop: space.sm,
     maxHeight: '85%',
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
   },
   handle: {
     alignSelf: 'center',

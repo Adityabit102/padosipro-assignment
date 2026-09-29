@@ -6,7 +6,6 @@ export const colors = {
   primary: '#155C49',
   primaryDeep: '#133E35',
   background: '#FAFAF7',
-  surface: '#F2F4F7',
   card: '#FFFFFF',
   text: '#101828',
   textMuted: '#667085',
@@ -19,7 +18,6 @@ export const colors = {
   error: '#B42318',
   errorBg: '#FFF1F0',
   gold: '#C9A84C',
-  goldBg: '#FDF6E3',
   tealMuted: '#E8F8F3',
   tealSoft: '#4CC4A2',
   white: '#FFFFFF',
@@ -44,6 +42,3 @@ export const type = {
   body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 22, color: colors.text },
   small: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: colors.textMuted },
 } as const;
-
-/** Minimum touch target (Android guideline 48dp, Apple 44pt). */
-export const TOUCH_MIN = 48;

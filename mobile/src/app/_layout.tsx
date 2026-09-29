@@ -10,13 +10,31 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { BackHandler, Keyboard, ScrollView } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError } from '@/api/client';
+import { getApiUrl } from '@/api/config';
 import { AuthProvider, useAuth } from '@/auth/AuthProvider';
+import { ServerForm } from '@/components/ServerForm';
 import { ErrorView } from '@/components/StateViews';
 import { colors } from '@/theme/tokens';
 
 void SplashScreen.preventAutoHideAsync();
+
+/**
+ * On Android the Back key could reach the app while the keyboard was open, leaving the
+ * screen (or the app) instead of just closing the keyboard. Close the keyboard first.
+ */
+function useBackClosesKeyboard() {
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (!Keyboard.isVisible()) return false;
+      Keyboard.dismiss();
+      return true;
+    });
+    return () => sub.remove();
+  }, []);
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -61,6 +79,19 @@ export default function RootLayout() {
 function RootNavigator() {
   const { state, account, retryRestore, signOut } = useAuth();
   const [retrying, setRetrying] = useState(false);
+  const [changingServer, setChangingServer] = useState(false);
+  useBackClosesKeyboard();
+
+  // The server form shown from the offline screen sits outside the navigator, so Back returns here by hand.
+  useEffect(() => {
+    if (!changingServer) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (Keyboard.isVisible()) return false; // let the keyboard close first
+      setChangingServer(false);
+      return true;
+    });
+    return () => sub.remove();
+  }, [changingServer]);
 
   useEffect(() => {
     if (state.status !== 'loading') void SplashScreen.hideAsync();
@@ -69,19 +100,38 @@ function RootNavigator() {
   if (state.status === 'loading') return null; // the native splash stays visible
 
   if (state.status === 'offline') {
+    const retry = async () => {
+      setRetrying(true);
+      await retryRestore();
+      setRetrying(false);
+    };
+    // A saved session but no server: often the computer's address changed (e.g. a new
+    // hotspot), so the address can be fixed here without logging out.
+    if (changingServer) {
+      return (
+        <ServerForm
+          onBack={() => setChangingServer(false)}
+          onSaved={() => {
+            setChangingServer(false);
+            void retry();
+          }}
+        />
+      );
+    }
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <ErrorView
-          title="Can't reach PadosiPro"
-          message={state.error.message}
-          retrying={retrying}
-          onRetry={async () => {
-            setRetrying(true);
-            await retryRestore();
-            setRetrying(false);
-          }}
-          secondaryAction={{ title: 'Log out', onPress: () => void signOut() }}
-        />
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <ErrorView
+            title="Can't reach PadosiPro"
+            message={`${state.error.message}\n\nServer: ${getApiUrl().replace(/^https?:\/\//, '')}. Check that the backend is running. On a phone, the computer's address changes when you switch Wi-Fi or hotspot.`}
+            retrying={retrying}
+            onRetry={() => void retry()}
+            secondaryActions={[
+              { title: 'Change server', onPress: () => setChangingServer(true) },
+              { title: 'Log out', onPress: () => void signOut() },
+            ]}
+          />
+        </ScrollView>
       </SafeAreaView>
     );
   }

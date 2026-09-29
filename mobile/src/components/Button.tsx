@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Variant = 'primary' | 'secondary' | 'ghost';
 
 interface Props {
   title: string;
@@ -68,8 +68,4 @@ const variants: Record<Variant, { container: ViewStyle; text: { color: string } 
     text: { color: colors.primary },
   },
   ghost: { container: { backgroundColor: 'transparent', minHeight: 48 }, text: { color: colors.primary } },
-  danger: {
-    container: { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.errorBg },
-    text: { color: colors.error },
-  },
 };

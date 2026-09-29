@@ -1,4 +1,4 @@
-import { Link, router, useIsFocused } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type TextInput } from 'react-native';
 import { ApiError, errorMessage } from '@/api/client';
@@ -71,11 +71,13 @@ export default function RegisterScreen() {
           <Button title="Create account" onPress={submit} loading={submitting} />
           <View style={styles.switchRow}>
             <Text style={type.small}>Already have an account? </Text>
-            <Link href="/login" replace asChild>
-              <Pressable hitSlop={10} accessibilityRole="link">
-                <Text style={styles.link}>Log in</Text>
-              </Pressable>
-            </Link>
+            <Pressable
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/login'))}
+              hitSlop={10}
+              accessibilityRole="link"
+            >
+              <Text style={styles.link}>Log in</Text>
+            </Pressable>
           </View>
         </>
       }

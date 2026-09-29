@@ -2,8 +2,8 @@ import { getApiUrl } from './config';
 
 const TIMEOUT_MS = 15_000;
 
-/** Error codes the server can return, plus two client-side ones. */
-export type ApiErrorCode = string | 'NETWORK_ERROR' | 'TIMEOUT';
+/** A server error code (see backend/API.md), or NETWORK_ERROR / TIMEOUT from the client. */
+type ApiErrorCode = string;
 
 export class ApiError extends Error {
   constructor(

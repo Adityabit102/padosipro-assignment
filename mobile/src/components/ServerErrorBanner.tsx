@@ -16,8 +16,8 @@ export function ServerErrorBanner({ onDismiss }: { onDismiss: () => void }) {
       <View style={styles.body}>
         <Text style={styles.title}>Can’t reach the server at {host}</Text>
         <Text style={styles.text}>
-          On a phone, set your computer’s Wi-Fi address (for example 192.168.1.20:4000). The emulator works with
-          10.0.2.2:4000.
+          Check that the backend is running. On a phone, use your computer’s IP on the shared Wi-Fi or hotspot (for
+          example 192.168.43.20:4000). The emulator works with 10.0.2.2:4000.
         </Text>
         <Pressable
           onPress={() => {

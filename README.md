@@ -1,15 +1,8 @@
 # PadosiPro: onboarding app + API
 
-The first journey of the PadosiPro customer app, built as a **native mobile app** with its own backend:
+A native Android app with its own backend, covering the first journey of the PadosiPro customer app:
 
-**Register → verify email (OTP) → log in → first-login profile → pick tasks → home → log out**
-
-| | |
-|---|---|
-| `backend/` | Node 20 + TypeScript + Express 5 + Prisma + PostgreSQL 16. Emails go to **Mailpit** (local mail catcher). |
-| `mobile/` | React Native with Expo SDK 57 + Expo Router + TypeScript. Every screen is native; there is no WebView. |
-| [`DESIGN.md`](DESIGN.md) | Architecture, trade-offs, what's left out, next steps |
-| [`backend/API.md`](backend/API.md) | Endpoint and error reference |
+**Create account → verify email with a 6-digit code → log in → fill in your details (once) → pick tasks → home → log out**
 
 <p>
 <img src="docs/screenshots/login.jpg" width="130" alt="Log in">
@@ -20,79 +13,142 @@ The first journey of the PadosiPro customer app, built as a **native mobile app*
 <img src="docs/screenshots/home.jpg" width="130" alt="Home">
 </p>
 
-*Screenshots from the release APK on an Android 15 emulator (Pixel 6), running against the Docker backend.*
+| Part | What it is |
+|---|---|
+| `backend/` | The API: Node + TypeScript + Express + PostgreSQL. Verification emails go to **Mailpit**, a local inbox you open in your browser. |
+| `mobile/` | The app: React Native (Expo). Every screen is native; there is no WebView. |
+| [`DESIGN.md`](DESIGN.md) | Architecture, trade-offs, what's left out, next steps |
+| [`backend/API.md`](backend/API.md) | Endpoint and error reference |
 
 ---
 
-## Reviewer quick start (about 5 minutes)
+## Try it (about 10 minutes)
 
-**1. Start the backend** (needs Docker Desktop):
+You need two things:
+
+- **Docker Desktop**, installed and running: [download for Mac or Windows](https://www.docker.com/products/docker-desktop/). It runs the backend, the database and the email inbox with one command.
+- **An Android phone**, or an **Android emulator** from [Android Studio](https://developer.android.com/studio) (Device Manager → create a device → ▶).
+
+### Step 1: Get the project
+
+Download it as a ZIP (green **Code** button → **Download ZIP** on the GitHub page) and unzip it, or run:
+
+```bash
+git clone https://github.com/Adityabit102/padosipro-assignment.git
+cd padosipro-assignment
+```
+
+### Step 2: Start the backend
+
+Open a terminal in the project folder and run:
 
 ```bash
 docker compose up --build
 ```
 
-When `http://localhost:4000/health` shows `{"status":"ok"}`, it's ready. The OTP emails appear in **Mailpit at http://localhost:8025**.
+The first run takes 1 to 3 minutes. Leave this terminal open. The backend is ready when **http://localhost:4000/health** shows `{"status":"ok"}` in your browser.
 
-**2. Install the app.** Download `PadosiPro-v1.0.1.apk` from this repository's **Releases** page, then either:
+Keep **http://localhost:8025** open in a browser tab too. This is **Mailpit**, where the 6-digit verification codes arrive. No real email is sent.
 
-- **Android emulator:** drag the APK onto the emulator window, or run `adb install PadosiPro-v1.0.1.apk`. No setup is needed; the emulator reaches your computer at `10.0.2.2:4000`.
-- **Android phone on the same Wi-Fi:** install the APK. On the Log in screen, tap **Server · Change** at the bottom and enter `http://<your computer's Wi-Fi IP>:4000`. Get the IP with `ipconfig getifaddr en0` on macOS or `ipconfig` on Windows. Tap **Test connection**, then **Save**. If the app can't reach the server, it tells you so and links straight to this setting.
+### Step 3: Install the app
 
-To build the app yourself instead, see [section 3](#3-run-the-mobile-app) (Expo Go) or [section 5](#5-build-the-apk).
+Download **`PadosiPro-v1.0.2.apk`** from the [latest release](https://github.com/Adityabit102/padosipro-assignment/releases/latest).
 
-**3. Walk through the journey:**
+**On an Android emulator**
+
+1. Drag the APK file onto the emulator window. It installs automatically.
+2. Open **PadosiPro**. Nothing else to set up: the emulator reaches your computer at `10.0.2.2:4000`, which is the app's default.
+
+**On an Android phone**
+
+1. Connect the phone and the computer to the **same network**. Any of these works:
+   - the same Wi-Fi router;
+   - the **phone's own hotspot**, with the computer connected to it;
+   - another device's hotspot, with both connected to it.
+2. Find the computer's IP address on that network:
+   - **Mac:** run `ipconfig getifaddr en0` in Terminal (for example `192.168.43.20`).
+   - **Windows:** run `ipconfig` in Command Prompt and use the **IPv4 Address** of the Wi-Fi adapter.
+3. Copy the APK to the phone (or open the release page in the phone's browser) and tap it to install.
+   - Allow "Install unknown apps" for your browser or file manager when Android asks.
+   - If Google Play Protect warns about an unknown app, tap **More details → Install anyway**. The APK is a test build that isn't on the Play Store.
+4. Open the app. At the bottom of the Log in screen, tap **Server · Change**.
+5. Enter `http://<the IP from step 2>:4000`, for example `http://192.168.43.20:4000`. Tap **Test connection**; it should say *Connected*. Then tap **Save**.
+
+The IP address changes when the computer joins a different network, or sometimes when a hotspot reconnects. If the app says it can't reach the server, repeat steps 2, 4 and 5. When it can't connect, the app offers a **Change server** button, both on the sign-in screens and when it starts up already logged in.
+
+### Step 4: Walk through the app
 
 | # | Do this | What to check |
 |---|---|---|
-| 1 | **Create an account**, e.g. `test.user@example.com` / `secret123` | Inline errors for a bad email, a short password, or passwords that don't match |
-| 2 | Enter the 6-digit code from **Mailpit** | A wrong code shows the attempts left, and the 5th wrong code locks it. *Resend code* unlocks after a 30 s countdown. Codes expire after 10 minutes. |
-| 3 | **Log in** with the same details | Logging in before verifying sends you back to the code screen with a fresh code |
-| 4 | Fill in the **profile** (Business name is optional) | Mobile must be a valid Indian number (`98765 43210`). This screen appears only once. |
-| 5 | **Pick tasks**: search, tick several, *Continue*, then *Confirm and save* | Tasks are grouped by category; there's an empty state for a search with no results, and a confirm sheet |
-| 6 | **Home** lists your tasks | Close and reopen the app: you're still logged in. *Edit tasks* changes them. |
-| 7 | **Log out** | You're back on Log in. Logging in again goes straight to Home, not the profile. |
+| 1 | Tap **Create an account**. Use a test address such as `test.user@example.com` and a password like `secret123`. | Clear messages under each field for a bad email, a short password or passwords that don't match |
+| 2 | Open **Mailpit** (http://localhost:8025 on the computer), copy the 6-digit code and type it in the app | A wrong code shows how many attempts are left; the 5th wrong code locks it. *Resend code* unlocks after a 30-second countdown. Codes expire after 10 minutes. |
+| 3 | **Log in** with the same email and password | Logging in before verifying sends you back to the code screen with a fresh code |
+| 4 | Fill in your **details**. *Business name* is optional. | The mobile number must be a valid 10-digit Indian number, such as `98765 43210`. This screen appears only once. |
+| 5 | **Pick tasks**: search (try "wifi" or "clean"), tick a few, tap *Continue*, then *Confirm and save* | Tasks are grouped by category. A search with no results shows a message and a *Clear search* button. |
+| 6 | **Home** lists your tasks | Close the app completely and reopen it: you're still logged in. *Edit tasks* changes your picks. |
+| 7 | **Log out** | You're back on Log in. Logging in again goes straight to Home, not the details screen. |
 
-Please use test data only (`@example.com` addresses).
+On a phone you can also read the codes in the phone's browser at `http://<computer IP>:8025`.
+
+### Step 5: Stop
+
+Press `Ctrl+C` in the terminal from step 2. To also delete the test accounts, run `docker compose down -v`.
 
 ---
 
-## 1. Prerequisites
+## If something goes wrong
+
+| Problem | Fix |
+|---|---|
+| The app says **"Can't reach the server"** | Check that http://localhost:4000/health works on the computer. **Emulator:** the server must be `10.0.2.2:4000` (tap *Server · Change → Reset to default*). **Phone:** use the computer's IP on the shared network (step 3), not `localhost`. |
+| Phone still can't connect, but the IP is right | Some networks (office, college or public Wi-Fi) block devices from reaching each other. Use a phone hotspot instead. On **Windows**, allow Docker Desktop through the firewall when asked, and set the network to *Private*. On **Mac**, if the firewall is on, allow incoming connections for Docker. |
+| No network at all between phone and computer | Connect the phone by USB with USB debugging on, run `adb reverse tcp:4000 tcp:4000`, and set the server to `http://localhost:4000`. |
+| No verification email | Look in Mailpit at http://localhost:8025. Check the backend logs with `docker compose logs api`. |
+| *"Please wait Ns before requesting a new code"* | The 30-second resend cooldown, working as intended. |
+| `docker compose` says **Cannot connect to the Docker daemon** | Start Docker Desktop and wait until it says it's running. |
+| `port is already allocated` | Another program uses port 4000, 5433, 8025 or 1025. Stop it, or change the left-hand number of that port in `docker-compose.yml`. |
+| Android blocks the install | Allow "Install unknown apps" for the app you opened the APK with. For Play Protect, tap *More details → Install anyway*. |
+
+Please use test data only, such as `@example.com` addresses.
+
+---
+
+## For developers
+
+### Prerequisites
 
 | Tool | Version | Needed for |
 |---|---|---|
-| Docker Desktop (with Compose v2) | any recent | Backend, database and Mailpit, in one command |
-| Node.js | 20 LTS or newer (22 recommended) | Running the app and the tests |
-| Android emulator **or** an Android phone with **Expo Go** | Android 8+ | Running the app |
-| *Only for building the APK locally:* Android Studio (SDK 35+) and JDK 17 | | See [section 5](#5-build-the-apk) |
+| Docker Desktop (Compose v2) | any recent | Backend, database and Mailpit |
+| Node.js | 20 LTS or newer (22 recommended) | Running the app from source and the tests |
+| Android emulator, or a phone with **Expo Go** | Android 8+ | Running the app from source |
+| Android SDK and JDK 17 or 21 | | Only for building the APK locally |
 
-Ports used: **4000** (API), **5433** (Postgres), **8025** (Mailpit web UI), **1025** (Mailpit SMTP), **8081** (Expo dev server).
+Ports: **4000** (API), **5433** (Postgres), **8025** (Mailpit web), **1025** (Mailpit SMTP), **8081** (Expo dev server).
 
----
+### Backend
 
-## 2. Run the backend (one command)
+`docker compose up --build` starts three containers. The API waits for Postgres, applies the migrations, seeds the task catalogue (30 tasks in 8 categories) and listens on port 4000.
 
-```bash
-docker compose up --build
-```
-
-This starts three containers. The API waits for Postgres, applies the migrations and seeds the task catalogue (30 tasks in 8 categories), then listens on port 4000.
-
-| Service | URL |
+| Service | Address |
 |---|---|
-| API | http://localhost:4000/health → `{"status":"ok"}` |
-| **Mailpit: read the OTP emails here** | **http://localhost:8025** |
+| API | http://localhost:4000/health |
+| Mailpit | http://localhost:8025 |
 | Postgres | `postgresql://padosipro:padosipro@localhost:5433/padosipro` |
 
-> **Email:** OTP emails are sent over real SMTP to **Mailpit**, a local mail catcher. Nothing leaves your machine.
-> Open http://localhost:8025 to read them. To use a real SMTP server instead, set the `SMTP_*` variables below.
+> **Email:** OTP emails are sent over real SMTP to **Mailpit**, a local mail catcher, so nothing leaves your machine. To use a real SMTP server, set the `SMTP_*` variables below.
 
-Stop with `Ctrl+C`. `docker compose down -v` also wipes the database.
+Docker Compose already sets working local values, so you don't need a `.env` file. To run the API outside Docker, copy [`backend/.env.example`](backend/.env.example) to `backend/.env`:
 
-### Environment variables
-
-Docker Compose already sets working local values, so you don't need a `.env` to run it.
-To run the API outside Docker (`npm run dev`), copy [`backend/.env.example`](backend/.env.example) to `backend/.env`.
+```bash
+docker compose up -d db mailpit
+cd backend
+cp .env.example .env
+npm install
+npx prisma migrate deploy
+npm run db:seed
+npm run dev                          # http://localhost:4000, restarts on file changes
+```
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -109,26 +165,9 @@ To run the API outside Docker (`npm run dev`), copy [`backend/.env.example`](bac
 | `AUTH_RATE_LIMIT_PER_15_MIN` | `50` (`300` in Docker Compose) | Requests per IP to `/auth/*`. Compose raises it because all emulator traffic comes from one IP. |
 | `PORT` / `LOG_LEVEL` | `4000` / `info` | |
 
-The config is validated at startup. A missing or weak secret stops the server with a clear message.
-The secrets in `docker-compose.yml` and `.env.example` are placeholders for local use only. You can override them with `JWT_SECRET=… OTP_SECRET=… docker compose up`.
+The config is validated at startup; a missing or weak secret stops the server with a clear message. The secrets in `docker-compose.yml` and `.env.example` are placeholders for local use. Override them with `JWT_SECRET=… OTP_SECRET=… docker compose up`.
 
-<details>
-<summary>Run the backend without Docker for the API (for development)</summary>
-
-```bash
-docker compose up -d db mailpit      # or use your own Postgres and set DATABASE_URL
-cd backend
-cp .env.example .env
-npm install
-npx prisma migrate deploy
-npm run db:seed
-npm run dev                          # http://localhost:4000, restarts on file changes
-```
-</details>
-
----
-
-## 3. Run the mobile app
+### Run the app from source
 
 ```bash
 cd mobile
@@ -136,28 +175,10 @@ npm install
 npx expo start
 ```
 
-Then press **`a`** to open the app on a running Android emulator, or scan the QR code with **Expo Go** on your phone.
+Press **`a`** to open it on a running Android emulator, or scan the QR code with **Expo Go** on a phone.
+The app calls `EXPO_PUBLIC_API_URL`, which defaults to `http://10.0.2.2:4000` (the emulator's address for your computer). On a phone, change it from **Server · Change** on the Log in screen, or start Expo with `EXPO_PUBLIC_API_URL=http://<LAN-IP>:4000 npx expo start` (see [`mobile/.env.example`](mobile/.env.example)). On the iOS simulator, use `http://localhost:4000`.
 
-**Pointing the app at the API.** The app calls `EXPO_PUBLIC_API_URL`, which defaults to `http://10.0.2.2:4000`. `10.0.2.2` is how the Android emulator reaches your computer's `localhost`, so **the emulator works with no changes.**
-
-- **On a real phone:** the phone and your computer must be on the same Wi-Fi. Find your computer's LAN IP (`ipconfig getifaddr en0` on macOS, `ipconfig` on Windows). Then either:
-  - tap **"Server: … · Change"** at the bottom of the Log in screen and enter `http://<LAN-IP>:4000` (use *Test connection* to check it), or
-  - start Expo with `EXPO_PUBLIC_API_URL=http://<LAN-IP>:4000 npx expo start` (or put it in `mobile/.env`, see [`mobile/.env.example`](mobile/.env.example)).
-- **On the iOS simulator:** use `http://localhost:4000`.
-
-### Try the whole flow (about 2 minutes)
-
-1. **Create an account**, e.g. `test.user@example.com` / `secret123`.
-2. Open **http://localhost:8025**, copy the 6-digit code and enter it. Try a wrong code first to see the attempts counter, and wait 30 s to see *Resend code* unlock.
-3. **Log in**. You land on the one-time **profile** screen: name, `98765 43210`, an address, and an optional business name.
-4. **Pick tasks**: search (e.g. "clean"), tick a few, tap *Continue*, check the list, then *Confirm and save*.
-5. **Home** lists your tasks. Close and reopen the app: you are still logged in. *Edit tasks* changes the selection; *Log out* ends the session.
-
-Please use test data only (e.g. `@example.com` addresses).
-
----
-
-## 4. Tests and checks
+### Tests and checks
 
 ```bash
 cd backend
@@ -182,19 +203,15 @@ What's covered, with the risky logic first:
 - **Security helpers** (`test/unit/security.test.ts`): argon2id hashing and salting; JWT expiry, tampering, the wrong secret and `alg: none`.
 - **Validation** (`test/unit/validation.test.ts`): Indian mobile normalisation, password rules, profile rules.
 
-To run the integration tests against another Postgres, set `TEST_DATABASE_URL`.
+Set `TEST_DATABASE_URL` to run the integration tests against another Postgres.
 
 Mobile: `cd mobile && npm run typecheck && npm run lint && npx expo-doctor`.
 
----
+### Build the APK
 
-## 5. Build the APK
+The default API address `http://10.0.2.2:4000` is compiled in and suits an emulator; on a phone, change it in the app (**Server · Change**) or set `EXPO_PUBLIC_API_URL` before building. Cleartext `http://` is allowed in release builds (through `expo-build-properties`), so a local API works.
 
-The API address is compiled into the build. The default `http://10.0.2.2:4000` suits an emulator.
-For a phone, set `EXPO_PUBLIC_API_URL` before building, or change it later in the app from the **Server** link on the Log in screen.
-Cleartext `http://` is allowed in release builds (through `expo-build-properties`), so a local API works.
-
-### Option A: EAS cloud build (no Android SDK needed)
+**Option A: EAS cloud build** (no Android SDK needed)
 
 ```bash
 cd mobile
@@ -202,11 +219,9 @@ npx eas-cli@latest login                        # free Expo account
 npx eas-cli@latest build -p android --profile preview
 ```
 
-The `preview` profile in `eas.json` produces an installable **`.apk`**. The first run offers to create the EAS project; answer yes. When it finishes, it prints a download link and a QR code.
+The `preview` profile in `eas.json` produces an installable `.apk`. The first run offers to create the EAS project; answer yes. It prints a download link when it finishes.
 
-### Option B: local build (Android SDK + JDK 17 or 21)
-
-Android Studio installs everything you need. The command-line tools alone also work (`brew install --cask android-commandlinetools`, then accept the licences with `sdkmanager --licenses`). Gradle downloads the SDK platform, build tools and NDK it needs on the first build.
+**Option B: local build** (Android SDK + JDK 17 or 21)
 
 ```bash
 cd mobile
@@ -217,27 +232,11 @@ EXPO_PUBLIC_API_URL=http://10.0.2.2:4000 npm run build:apk:local
 # = npx expo prebuild -p android --clean && cd android && ./gradlew assembleRelease
 ```
 
-The first build takes about 20 minutes (it compiles the native modules); later builds are much faster.
-The APK is written to `mobile/android/app/build/outputs/apk/release/app-release.apk`. It is signed with the debug keystore, which is fine for testing.
-Install it with `adb install -r mobile/android/app/build/outputs/apk/release/app-release.apk`.
+The first build takes about 20 minutes; later ones are much faster. The APK is written to `mobile/android/app/build/outputs/apk/release/app-release.apk`, signed with the debug keystore, which is fine for testing. Install it with `adb install -r <path to the apk>`.
 
----
-
-## 6. Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| App shows *"Can't reach the server"* | Check that http://localhost:4000/health works on your computer. Emulator: the URL must be `http://10.0.2.2:4000`. Phone: use your LAN IP, same Wi-Fi, and allow port 4000 through the firewall. |
-| `port is already allocated` | Another service uses 4000, 5433, 8025 or 1025. Stop it, or change the left-hand port in `docker-compose.yml`. |
-| No OTP email | Look in Mailpit (http://localhost:8025). Check the API logs with `docker compose logs api`. |
-| *"Please wait Ns before requesting a new code"* | This is the 30-second resend cooldown working as intended. |
-| Expo Go says the project needs a newer SDK | Update Expo Go from the Play Store (the project uses SDK 57). |
-| Stale Metro cache after pulling changes | `npx expo start --clear` |
-
----
-
-## Decisions worth knowing
+### Decisions worth knowing
 
 - **Business Name is optional.** PadosiPro serves households, and most customers have no business. A required field would push people to type fake values. The field says *(optional)*, and the API stores `null` when it's empty.
 - **Verification leads to Log in**, as in the brief ("after registration, users log in through the login page"). An unverified user who logs in is sent back to verification with a fresh code.
 - **The profile is shown once.** Its screen is only reachable while the profile is incomplete. After it's saved, the user can't navigate back to it.
+- **The server address can be changed in the app**, so one APK works with any tester's backend: emulator, Wi-Fi or hotspot.

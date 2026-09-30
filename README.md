@@ -52,7 +52,7 @@ Keep **http://localhost:8025** open in a browser tab too. This is **Mailpit**, w
 
 ### Step 3: Install the app
 
-Download **`PadosiPro-v1.0.3.apk`** from the [latest release](https://github.com/Adityabit102/padosipro-assignment/releases/latest).
+Download **`PadosiPro-v1.0.3.apk`** from the [latest release](https://github.com/Adityabit102/padosipro-assignment/releases/latest). (To build it yourself instead, see [Build the APK yourself](#build-the-apk-yourself).)
 
 **On an Android emulator**
 
@@ -132,7 +132,7 @@ Please use test data only, such as `@example.com` addresses.
 | Docker Desktop (Compose v2) | any recent | Backend, database and Mailpit |
 | Node.js | 20 LTS or newer (22 recommended) | Running the app from source and the tests |
 | Android emulator, or a phone with **Expo Go** | Android 8+ | Running the app from source |
-| Android SDK and JDK 17 or 21 | | Only for building the APK locally |
+| Android Studio (includes the Android SDK and Java) | recent | Only for building the APK on your computer |
 
 Ports: **4000** (API), **5433** (Postgres), **8025** (Mailpit web), **1025** (Mailpit SMTP), **8081** (Expo dev server).
 
@@ -218,32 +218,55 @@ Set `TEST_DATABASE_URL` to run the integration tests against another Postgres.
 
 Mobile: `cd mobile && npm run typecheck && npm run lint && npx expo-doctor`.
 
-### Build the APK
+### Build the APK yourself
 
-The default API address `http://10.0.2.2:4000` is compiled in and suits an emulator; on a phone, change it in the app (**Server · Change**) or set `EXPO_PUBLIC_API_URL` before building. Cleartext `http://` is allowed in release builds (through `expo-build-properties`), so a local API works.
+You don't need this to test the app: the ready-made APK is on the [Releases page](https://github.com/Adityabit102/padosipro-assignment/releases/latest). Pick one of the two ways below. Both produce an APK that connects to `http://10.0.2.2:4000` (the Android emulator's address for your computer) until you change the server in the app.
 
-**Option A: EAS cloud build** (no Android SDK needed)
+**Option A: build in the cloud with Expo (easiest, no Android tools needed)**
 
-```bash
-cd mobile
-npx eas-cli@latest login                        # free Expo account
-npx eas-cli@latest build -p android --profile preview
-```
-
-The `preview` profile in `eas.json` produces an installable `.apk`. The first run offers to create the EAS project; answer yes. It prints a download link when it finishes.
-
-**Option B: local build** (Android SDK + JDK 17 or 21)
+You need Node.js and a free [Expo account](https://expo.dev/signup).
 
 ```bash
 cd mobile
 npm install
-export ANDROID_HOME=$HOME/Library/Android/sdk   # Windows: %LOCALAPPDATA%\Android\Sdk
-export JAVA_HOME=$(/usr/libexec/java_home -v 21) # macOS; any JDK 17 or 21
-EXPO_PUBLIC_API_URL=http://10.0.2.2:4000 npm run build:apk:local
-# = npx expo prebuild -p android --clean && cd android && ./gradlew assembleRelease
+npx eas-cli@latest login
+npx eas-cli@latest build -p android --profile preview
 ```
 
-The first build takes about 20 minutes; later ones are much faster. The APK is written to `mobile/android/app/build/outputs/apk/release/app-release.apk`, signed with the debug keystore, which is fine for testing. Install it with `adb install -r <path to the apk>`.
+Answer **yes** when it asks to create the project and to generate a keystore. The build runs on Expo's servers (usually 10 to 20 minutes) and ends with a download link for the APK.
+
+**Option B: build on your computer**
+
+You need Node.js and [Android Studio](https://developer.android.com/studio). Open Android Studio once so it installs the Android SDK; it also includes the Java version the build needs.
+
+On **Mac**:
+
+```bash
+cd mobile
+npm install
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"   # or any JDK 17 or 21
+npm run build:apk:local
+```
+
+On **Windows** (PowerShell):
+
+```powershell
+cd mobile
+npm install
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"   # or any JDK 17 or 21
+npx expo prebuild -p android --clean
+cd android
+.\gradlew.bat assembleRelease
+```
+
+The first build takes 15 to 20 minutes; later builds are much faster. The APK is saved at `mobile/android/app/build/outputs/apk/release/app-release.apk`. Drag it onto the emulator, or run `adb install -r` followed by that path.
+
+Notes:
+- The build is signed with Android's standard debug key, which is fine for testing but not for the Play Store.
+- The app is allowed to use plain `http://` addresses, so it can talk to the local backend.
+- To bake a different default server into the build, set `EXPO_PUBLIC_API_URL` first (for example `EXPO_PUBLIC_API_URL=http://192.168.1.20:4000` on Mac). Changing it in the app works too.
 
 ### Decisions worth knowing
 

@@ -52,7 +52,7 @@ The verification codes don't go to a real inbox. They land in **Mailpit**, a loc
 
 ### 3. Install the app
 
-Download **`PadosiPro-v1.0.3.apk`** from the [latest release](https://github.com/Adityabit102/padosipro-assignment/releases/latest).
+Download **`PadosiPro-v1.0.4.apk`** from the [latest release](https://github.com/Adityabit102/padosipro-assignment/releases/latest).
 
 **On an emulator**, drag the APK onto the emulator window (BlueStacks and Nox also have an *Install APK* button) and open **PadosiPro**. Then check the server address, which you'll find under **Server · Change** at the bottom of the Log in screen:
 

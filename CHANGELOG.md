@@ -2,6 +2,13 @@
 
 Each version was installed and tested end to end on an Android emulator (and the backend from a fresh clone) before release. Only the latest APK is published on the [Releases page](https://github.com/Adityabit102/padosipro-assignment/releases/latest); earlier versions remain as git tags.
 
+## v1.0.4 (2026-09-30)
+
+Found while testing on a real phone:
+
+- **Keyboard:** on Android the keyboard no longer covers the password fields or the main button on Log in, Create account and the profile form. The screen now shrinks to the space above the keyboard and keeps the field you're typing in visible. (Android now draws apps edge-to-edge, so the old "resize the window" setting no longer applies.)
+- The Business name placeholder is shorter, so it no longer gets cut off.
+
 ## v1.0.3 (2026-09-30)
 
 - The first-time task step offers **Log out**, both in the list and on its error screen, so it has no dead end if the task list can't load.

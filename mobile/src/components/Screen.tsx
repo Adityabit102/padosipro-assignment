@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type RefreshControlProps } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, View, type RefreshControlProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, space } from '@/theme/tokens';
 
@@ -14,7 +14,9 @@ interface Props {
 export function Screen({ children, footer, refreshControl }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Android draws edge-to-edge (targetSdk 36), so the window no longer resizes for the keyboard:
+          pad by the keyboard's height on both platforms to keep the focused field and footer visible. */}
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScrollView
           style={styles.flex}
           contentContainerStyle={[styles.column, styles.content]}

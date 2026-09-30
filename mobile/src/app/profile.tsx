@@ -135,7 +135,7 @@ export default function ProfileScreen() {
         label="Business name"
         optional
         icon="briefcase"
-        placeholder="If you'd like us to handle business tasks too"
+        placeholder="Only if you have one"
         value={values.businessName}
         onChangeText={set('businessName')}
         onBlur={blur('businessName')}

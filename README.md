@@ -19,6 +19,7 @@ A native Android app with its own backend, covering the first journey of the Pad
 | `mobile/` | The app: React Native (Expo). Every screen is native; there is no WebView. |
 | [`DESIGN.md`](DESIGN.md) | Architecture, trade-offs, what's left out, next steps |
 | [`backend/API.md`](backend/API.md) | Endpoint and error reference |
+| [`CHANGELOG.md`](CHANGELOG.md) | What changed in each version |
 
 ---
 

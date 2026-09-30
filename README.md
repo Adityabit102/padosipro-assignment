@@ -57,7 +57,17 @@ Download **`PadosiPro-v1.0.2.apk`** from the [latest release](https://github.com
 **On an Android emulator**
 
 1. Drag the APK file onto the emulator window. It installs automatically.
-2. Open **PadosiPro**. Nothing else to set up: the emulator reaches your computer at `10.0.2.2:4000`, which is the app's default.
+2. Open **PadosiPro**. With the **Android Studio emulator** there is nothing else to set up: it reaches your computer at `10.0.2.2:4000`, which is the app's default.
+3. Read the codes in Mailpit at http://localhost:8025 in your computer's browser (not inside the emulator).
+
+Using a different emulator, or running the backend on another computer? Set the server once (tap **Server · Change** on the Log in screen, then **Test connection** and **Save**):
+
+| Emulator | Server address |
+|---|---|
+| Android Studio emulator | `http://10.0.2.2:4000` (default, no change needed) |
+| Genymotion | `http://10.0.3.2:4000` |
+| BlueStacks, Nox or another emulator | `http://<your computer's IP>:4000` (see *On an Android phone*, step 2, to find the IP) |
+| Backend on a different computer | `http://<that computer's IP>:4000` |
 
 **On an Android phone**
 
@@ -100,7 +110,7 @@ Press `Ctrl+C` in the terminal from step 2. To also delete the test accounts, ru
 
 | Problem | Fix |
 |---|---|
-| The app says **"Can't reach the server"** | Check that http://localhost:4000/health works on the computer. **Emulator:** the server must be `10.0.2.2:4000` (tap *Server · Change → Reset to default*). **Phone:** use the computer's IP on the shared network (step 3), not `localhost`. |
+| The app says **"Can't reach the server"** | Check that http://localhost:4000/health works on the computer. **Android Studio emulator:** the server must be `10.0.2.2:4000` (tap *Server · Change → Reset to default*). **Genymotion:** `10.0.3.2:4000`. **Other emulators:** the computer's IP. **Phone:** use the computer's IP on the shared network (step 3), not `localhost`. |
 | Phone still can't connect, but the IP is right | Some networks (office, college or public Wi-Fi) block devices from reaching each other. Use a phone hotspot instead. On **Windows**, allow Docker Desktop through the firewall when asked, and set the network to *Private*. On **Mac**, if the firewall is on, allow incoming connections for Docker. |
 | No network at all between phone and computer | Connect the phone by USB with USB debugging on, run `adb reverse tcp:4000 tcp:4000`, and set the server to `http://localhost:4000`. |
 | No verification email | Look in Mailpit at http://localhost:8025. Check the backend logs with `docker compose logs api`. |

@@ -52,7 +52,7 @@ Keep **http://localhost:8025** open in a browser tab too. This is **Mailpit**, w
 
 ### Step 3: Install the app
 
-Download **`PadosiPro-v1.0.2.apk`** from the [latest release](https://github.com/Adityabit102/padosipro-assignment/releases/latest).
+Download **`PadosiPro-v1.0.3.apk`** from the [latest release](https://github.com/Adityabit102/padosipro-assignment/releases/latest).
 
 **On an Android emulator**
 
@@ -194,7 +194,7 @@ The app calls `EXPO_PUBLIC_API_URL`, which defaults to `http://10.0.2.2:4000` (t
 cd backend
 npm install
 docker compose up -d db              # the integration tests use a separate padosipro_test database, created automatically
-npm test                             # 70 tests: unit + integration
+npm test                             # 72 tests: unit + integration
 npm run test:unit                    # 50 pure unit tests, no database needed
 npm run typecheck && npm run lint
 ```
@@ -210,6 +210,7 @@ What's covered, with the risky logic first:
   - cooldown; no account enumeration on resend
   - SMTP failure handling
   - profile validation, then catalogue, search, task replace and unknown task ids
+  - `/health` reports a database outage as 503
 - **Security helpers** (`test/unit/security.test.ts`): argon2id hashing and salting; JWT expiry, tampering, the wrong secret and `alg: none`.
 - **Validation** (`test/unit/validation.test.ts`): Indian mobile normalisation, password rules, profile rules.
 

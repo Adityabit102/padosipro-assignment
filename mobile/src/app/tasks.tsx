@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -29,7 +30,14 @@ type Section = { category: Category; data: Task[] };
 
 
 export default function TasksScreen() {
-  const { account, setAccount } = useAuth();
+  const { account, setAccount, signOut } = useAuth();
+
+  // The first-time step has no Back, so logging out is the way out (as on the profile step).
+  const confirmLogout = () =>
+    Alert.alert('Log out?', 'You can pick your tasks the next time you log in.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', style: 'destructive', onPress: () => void signOut() },
+    ]);
   const queryClient = useQueryClient();
   const isEditing = account?.hasSelectedTasks ?? false;
 
@@ -109,7 +117,11 @@ export default function TasksScreen() {
             void catalogue.refetch();
             if (isEditing) void mine.refetch();
           }}
-          secondaryActions={isEditing ? [{ title: 'Back to home', onPress: () => router.back() }] : []}
+          secondaryActions={[
+            isEditing
+              ? { title: 'Back to home', onPress: () => router.back() }
+              : { title: 'Log out', onPress: confirmLogout },
+          ]}
         />
       </SafeAreaView>
     );
@@ -170,6 +182,16 @@ export default function TasksScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         contentContainerStyle={styles.list}
+        ListFooterComponent={
+          isEditing ? null : (
+            <View style={styles.signedIn}>
+              <Text style={type.small}>Signed in as {account?.email}. </Text>
+              <Pressable onPress={confirmLogout} hitSlop={10} accessibilityRole="button">
+                <Text style={styles.link}>Not you? Log out</Text>
+              </Pressable>
+            </View>
+          )
+        }
         ListEmptyComponent={
           query ? (
             <EmptyView
@@ -324,6 +346,8 @@ const styles = StyleSheet.create({
   footerInner: { width: '100%', maxWidth: 600, alignSelf: 'center' },
   clear: { alignSelf: 'center', paddingVertical: space.sm, marginBottom: space.xs },
   clearText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textMuted },
+  signedIn: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: space.sm, minHeight: 32 },
+  link: { fontFamily: fonts.semibold, fontSize: 13, color: colors.primary },
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(16,24,40,0.44)' },
   sheet: {
     backgroundColor: colors.background,

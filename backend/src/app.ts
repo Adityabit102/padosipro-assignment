@@ -48,8 +48,16 @@ export function createApp(deps: AppDeps) {
     }),
   );
 
-  app.get('/health', (_req, res) => {
-    res.json({ status: 'ok' });
+  // Also checks the database, so Docker's healthcheck and the app's "Test connection"
+  // don't report a working server while Postgres is unreachable.
+  app.get('/health', async (_req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.json({ status: 'ok' });
+    } catch (err) {
+      logger.error({ err }, 'Health check: database unreachable');
+      res.status(503).json({ error: { code: 'SERVICE_UNAVAILABLE', message: 'The database is not reachable.' } });
+    }
   });
 
   // Brute-force protection on the unauthenticated endpoints, on top of the per-code attempt limit.

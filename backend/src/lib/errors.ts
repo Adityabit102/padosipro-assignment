@@ -20,6 +20,7 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'RATE_LIMITED'
   | 'EMAIL_DELIVERY_FAILED'
+  | 'SERVICE_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
 export class AppError extends Error {

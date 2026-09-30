@@ -34,7 +34,8 @@ Every error has the same shape, so the app can branch on `code` and show `messag
 | `UNAUTHORIZED` | 401 | Missing, invalid or expired token |
 | `PROFILE_REQUIRED` | 409 | Save tasks before the profile |
 | `UNKNOWN_TASKS` | 400 | Task ids that don't exist; `details: { unknownIds }` |
-| `RATE_LIMITED` | 429 | More than 50 `/auth/*` requests per 15 minutes from one IP |
+| `RATE_LIMITED` | 429 | Too many `/auth/*` requests from one IP in 15 minutes (`AUTH_RATE_LIMIT_PER_15_MIN`: 50 by default, 300 in Docker Compose) |
+| `SERVICE_UNAVAILABLE` | 503 | `GET /health` when the database is unreachable |
 | `NOT_FOUND` / `INTERNAL_ERROR` | 404 / 500 | Unknown route / unexpected failure (details are logged, never returned) |
 
 ## Endpoints
@@ -83,4 +84,4 @@ The catalogue grouped by category. `q` searches task name, description and categ
 Replaces the whole selection in one transaction. At least one task is required.
 
 ### `GET /health`
-→ **200** `{ "status": "ok" }`
+→ **200** `{ "status": "ok" }` when the API and its database are up; **503** `SERVICE_UNAVAILABLE` when the database is unreachable.

@@ -1,5 +1,8 @@
+import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createApp } from '../../src/app';
+import { createLogger } from '../../src/lib/logger';
 import { createTestContext } from './harness';
 
 let ctx: Awaited<ReturnType<typeof createTestContext>>;
@@ -307,5 +310,19 @@ describe('error handling', () => {
       .send('{"email":')
       .expect(400);
     expect(badJson.body.error.code).toBe('VALIDATION_ERROR');
+  });
+});
+
+describe('GET /health', () => {
+  it('is ok when the database answers', async () => {
+    await request(ctx.app).get('/health').expect(200, { status: 'ok' });
+  });
+
+  it('returns 503 when the database is unreachable', async () => {
+    const deadDb = new PrismaClient({ datasourceUrl: 'postgresql://nobody:nothing@127.0.0.1:1/none' });
+    const app = createApp({ ...ctx, prisma: deadDb, logger: createLogger('silent', false) });
+    const res = await request(app).get('/health').expect(503);
+    expect(res.body.error.code).toBe('SERVICE_UNAVAILABLE');
+    await deadDb.$disconnect();
   });
 });

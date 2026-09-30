@@ -24,7 +24,10 @@ A native Android app and its backend for the first steps of the PadosiPro custom
 You'll need:
 
 - **Docker Desktop**, installed and running ([download](https://www.docker.com/products/docker-desktop/)).
-- **An Android phone**, or the **Android emulator** from [Android Studio](https://developer.android.com/studio).
+- **An Android phone**, or an **Android emulator**. Any of these works:
+  - **Android Studio emulator** (recommended): install [Android Studio](https://developer.android.com/studio), then create a virtual device in **Device Manager** ([how to](https://developer.android.com/studio/run/managing-avds)).
+  - **[Genymotion Desktop](https://www.genymotion.com/product-desktop/download/)**, free for personal use.
+  - **[BlueStacks](https://www.bluestacks.com/download.html)** (Windows and Mac).
 
 ### 1. Get the project
 
@@ -91,6 +94,7 @@ Please use test data only.
 - **"Can't reach the server"**: check that http://localhost:4000/health works on the computer. Then check the server address: `10.0.2.2:4000` on the Android Studio emulator (**Server · Change → Reset to default**), `10.0.3.2:4000` on Genymotion, and the computer's IP on other emulators and on phones (never `localhost`).
 - **The phone still can't connect**: some office, college and public Wi-Fi networks stop devices from talking to each other. Use a phone hotspot instead. On Windows, allow Docker through the firewall when asked. If there's no shared network at all, connect the phone by USB, run `adb reverse tcp:4000 tcp:4000` and set the server to `http://localhost:4000`.
 - **No code arrived**: look in Mailpit at http://localhost:8025, or check the logs with `docker compose logs api`.
+- **On the emulator, the email box shows a small toolbar instead of the keyboard**: that's the emulator's handwriting mode, not the app. Type with your computer's keyboard, or open the emulator's **Settings**, search for **stylus**, and turn off writing in text fields.
 - **"Cannot connect to the Docker daemon"**: start Docker Desktop and wait until it's running.
 - **"Port is already allocated"**: another program is using port 4000, 5433, 8025 or 1025. Close it, or change the first number of that port in `docker-compose.yml`.
 
